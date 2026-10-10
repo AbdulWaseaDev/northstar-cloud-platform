@@ -134,7 +134,8 @@ aws secretsmanager get-secret-value --secret-id "$(terraform output -raw rds_mas
 ## CI/CD
 
 - **Pull requests** run `fmt`, `validate`, and `plan` for both dev and prod.
-- **Merges to `main`** apply dev first, then prod. Add required reviewers to the `prod` environment in the GitHub repository settings so prod waits for approval.
+- **Applies are manual.** Nothing deploys on merge, because applying creates billable resources. Run **Terraform Apply** from the Actions tab and choose `dev` or `prod`. Prod waits for approval from the `prod` environment's required reviewers.
+- To stop paying for a deployed environment, run `terraform destroy` with that environment's backend and tfvars.
 
 ## Production Notes
 

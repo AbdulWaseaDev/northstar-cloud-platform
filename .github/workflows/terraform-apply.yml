@@ -1,18 +1,27 @@
 name: Terraform Apply
 
+# Manual only: applying creates billable AWS resources, so nothing deploys
+# automatically on merge. Run it from the Actions tab and pick an environment.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        options: [dev, prod]
+        default: dev
 
 # Never run two applies against the same state at once.
 concurrency:
-  group: terraform-apply
+  group: terraform-apply-${{ inputs.environment }}
   cancel-in-progress: false
 
 jobs:
-  apply-dev:
+  terraform-apply:
     runs-on: ubuntu-latest
-    environment: dev
+    # Add required reviewers to the "prod" environment in the repository
+    # settings to gate prod applies on approval.
+    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -33,38 +42,7 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Terraform Init
-        run: terraform init -input=false -backend-config=environments/dev/backend.hcl
+        run: terraform init -input=false -backend-config=environments/${{ inputs.environment }}/backend.hcl
 
       - name: Terraform Apply
-        run: terraform apply -input=false -auto-approve -var-file=environments/dev/terraform.tfvars
-
-  # Runs only after dev succeeds. Add required reviewers to the "prod"
-  # environment in the repository settings to gate this job on approval.
-  apply-prod:
-    needs: apply-dev
-    runs-on: ubuntu-latest
-    environment: prod
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: us-east-1
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.7
-
-      - name: Terraform Init
-        run: terraform init -input=false -backend-config=environments/prod/backend.hcl
-
-      - name: Terraform Apply
-        run: terraform apply -input=false -auto-approve -var-file=environments/prod/terraform.tfvars
+        run: terraform apply -input=false -auto-approve -var-file=environments/${{ inputs.environment }}/terraform.tfvars
