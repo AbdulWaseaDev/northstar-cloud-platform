@@ -1,0 +1,10 @@
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+# Local overrides only; environments/*/terraform.tfvars are committed and hold no secrets
+*.auto.tfvars
+.crash
+.idea/
+.vscode/
+.DS_Store
